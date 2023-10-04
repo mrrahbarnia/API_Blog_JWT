@@ -33,5 +33,18 @@ services:
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
 
+  smtp4dev:
+      image: rnwood/smtp4dev:v3
+      restart: always
+      ports:
+        - '4000:80'
+        - '25:25'
+        - '143:143'
+      volumes:
+        - smtp4dev-data:/smtp4dev
+      environment:
+        - ServerOptions__HostName=smtp4dev
+    
 volumes:
   dev-db-data:
+  smtp4dev-data:
