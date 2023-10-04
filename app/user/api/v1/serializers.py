@@ -88,7 +88,6 @@ class ChangePasswordSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         """Validating new passwords."""
-        old_password = attrs.get('old_password')
         new_password = attrs.get('new_password')
         new_password1 = attrs.get('new_password1')
         if new_password != new_password1:
@@ -103,7 +102,7 @@ class ChangePasswordSerializer(serializers.Serializer):
             errors['new_password'] = list(e.messages)
         if errors:
             raise serializers.ValidationError(errors)
-        attrs[old_password]
-        attrs[new_password]
+        attrs['old_password']
+        attrs['new_password']
 
         return attrs
