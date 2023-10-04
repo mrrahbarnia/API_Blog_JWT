@@ -4,6 +4,8 @@ Tests for models.
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
+from core.models import Profile
+
 
 class ModelTests(TestCase):
     """Test models."""
@@ -87,3 +89,17 @@ class ModelTests(TestCase):
                 )
         self.assertEqual(test_user.email, "test8@example.com")
         self.assertTrue(test_user.check_password("T123@example"))
+
+    def test_profile_created_after_adding_user_account(self):
+        """
+        Test for checking whether profile will create
+        successfully after creating a user or not.
+        """
+        test_user = get_user_model().objects.create_user(
+            email="test9@example.com",
+            password="T123@example"
+        )
+
+        self.assertTrue(
+            Profile.objects.filter(user=test_user).exists()
+        )
