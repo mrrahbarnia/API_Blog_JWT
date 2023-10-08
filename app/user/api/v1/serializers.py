@@ -11,19 +11,20 @@ from django.utils.translation import gettext as _
 
 from rest_framework import serializers
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for validating and convert into
     Json format for user registration endpoint.
     """
-    email = serializers.EmailField(max_length=100)
-    password = serializers.CharField(min_length=8, write_only=True)
     password1 = serializers.CharField(write_only=True)
 
     class Meta:
         model = get_user_model()
         fields = ["email", "password", "password1"]
+        extra_kwargs = {'password': {'min_length': 8}}
 
     def validate(self, attrs):
         """To validate attrs."""
@@ -106,3 +107,22 @@ class ChangePasswordSerializer(serializers.Serializer):
         attrs['new_password']
 
         return attrs
+
+
+class CustomJwtSerializer(TokenObtainPairSerializer):
+    """Custom serializer based on TokenObtainPairSerializer
+    to showing user's email and user's id"""
+
+    def get_token(cls, user):
+        """Showing user'e email on decoding token."""
+        token = super().get_token(user)
+        token['email'] = user.email
+        return token
+
+    def validate(self, attrs):
+        """Return email and id in addition of other details."""
+        validated_data = super().validate(attrs)
+        validated_data['email'] = self.user.email
+        validated_data['id'] = self.user.id
+
+        return validated_data
