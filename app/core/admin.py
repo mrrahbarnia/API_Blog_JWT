@@ -5,19 +5,23 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from .models import User
+from .models import (
+    User,
+    Profile
+)
 
 
 class UserAdmin(UserAdmin):
     """For customizing admin page."""
     ordering = ['id']
     model = User
-    list_display = ("email",)
+    list_display = ("email", "is_verified", "is_staff")
     fieldsets = (
         (None, {'fields': ("email", "password")}),
         (_("Permissions"),
             {'fields':
-             ("is_active", "is_staff", "groups", "user_permissions")}),
+             ("is_active", "is_verified",
+              "is_staff", "groups", "user_permissions")}),
         (_("Important dates"), {"fields": ("last_login",)}),
     )
     readonly_fields = ("last_login",)
@@ -28,6 +32,7 @@ class UserAdmin(UserAdmin):
                 "password1",
                 "password2",
                 "is_active",
+                "is_verified",
                 "is_staff",
                 "is_superuser",
             )
@@ -36,3 +41,4 @@ class UserAdmin(UserAdmin):
 
 
 admin.site.register(User, UserAdmin)
+admin.site.register(Profile)

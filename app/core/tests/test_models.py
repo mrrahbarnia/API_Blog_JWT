@@ -1,10 +1,12 @@
 """
 Tests for models.
 """
+from unittest.mock import patch
+
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
-from core.models import Profile
+from core import models
 
 
 class ModelTests(TestCase):
@@ -101,5 +103,14 @@ class ModelTests(TestCase):
         )
 
         self.assertTrue(
-            Profile.objects.filter(user=test_user).exists()
+            models.Profile.objects.filter(user=test_user).exists()
         )
+
+    @patch('core.models.uuid.uuid4')
+    def test_uploading_profile_image_in_correct_path(self, mock_uuid):
+        """Test for checking the path of uploading profile images."""
+        uuid = 'uuid-test'
+        mock_uuid.return_value = uuid
+        file_path = models.profile_images_file_path(None, 'example.png')
+
+        self.assertEqual(file_path, f'uploads/profile/{uuid}.png')

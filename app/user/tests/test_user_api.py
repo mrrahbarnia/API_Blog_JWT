@@ -8,18 +8,27 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 
+from core.models import Profile
+
 
 CREATE_USER_URL = reverse('user:api-user:registration')
 TOKEN_LOGIN_URL = reverse('user:api-user:token-login')
 TOKEN_LOGOUT_URL = reverse('user:api-user:token-logout')
 CHANGE_PASSWORD_URL = reverse('user:api-user:change-password')
 JWT_CREATE_URL = reverse('user:api-user:jwt-create')
-# JWT_REFRESH_URL = reverse('user:api-user:jwt-refresh')
-# JWT_VERIFY_URL = reverse('user:api-user:jwt-verify')
+PROFILE_URL = reverse('user:api-user:profile')
+RESEND_ACTIVATION_URL = reverse('user:api-user:resend-activation')
+RESET_PASSWORD_URL = reverse('user:api-user:reset-password')
 
 
 def create_user(**params):
+    """Create and return a user."""
     return get_user_model().objects.create_user(**params)
+
+
+def activation_url(token):
+    """Create and return a user activation url."""
+    return reverse('user:api-user:activation', args=[token])
 
 
 class PublicUserApiTest(TestCase):
@@ -97,7 +106,11 @@ class PublicUserApiTest(TestCase):
             "email": "Test@example.com",
             "password": "T123@example",
         }
-        create_user(email=payload['email'], password=payload['password'])
+        create_user(
+            email=payload['email'],
+            password=payload['password'],
+            is_verified=True
+        )
         res = self.client.post(TOKEN_LOGIN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -137,26 +150,78 @@ class PublicUserApiTest(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_retrieve_profile_unauthorized(self):
+        """Test for retrieving profile endpoint with unauthenticated user."""
+        res = self.client.get(PROFILE_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_activation_url_post_not_allowed_405(self):
+        """Test not allowed posting method for activation URL."""
+        url = activation_url({})
+        res = self.client.post(url, {})
+
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_resend_activation_with_not_existing_email(self):
+        """Test resend avtivation URL with not existing email."""
+        payload = {
+            'email': 'Test@example.com'
+        }
+        res = self.client.post(RESEND_ACTIVATION_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_resend_activation_with_existing_email(self):
+        """Test resend activation URL with existing email."""
+        payload = {
+            'email': 'Test@example.com'
+        }
+        create_user(email=payload['email'], password='T123@example')
+        res = self.client.post(RESEND_ACTIVATION_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_resend_activation_url_with_verified_user(self):
+        """Test resend activation URL with a verified user."""
+        payload = {
+            'email': 'T123@example.com'
+        }
+        create_user(email=payload['email'],
+                    password='T123@example',
+                    is_verified=True)
+        res = self.client.post(RESEND_ACTIVATION_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_reset_password_url_with_not_existing_email(self):
+        """Test reset password URL with not existing email."""
+        payload = {
+            'email': 'T123@example.com'
+        }
+        res = self.client.post(RESET_PASSWORD_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_reset_password_url_successfully(self):
+        """Test reset password URL successfully with response 200."""
+        payload = {
+            'email': 'T123@example.com'
+        }
+        create_user(email=payload['email'], password='T123@example')
+        res = self.client.post(RESET_PASSWORD_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
 
 class PrivateUserApiTest(TestCase):
     """Tests API requests that required authentication."""
     def setUp(self):
         self.user = create_user(
-            email="Test@example.com", password="T123@example"
+            email="Test@example.com", password="T123@example", is_verified=True
             )
         self.client = APIClient()
         self.client.force_authenticate(self.user)
-
-    def test_token_generator_for_showing_id_and_email_in_response(self):
-        """Test for exhibiting user id and user email in response."""
-        payload = {
-            "email": "Test@example.com",
-            "password": "T123@example",
-        }
-        res = self.client.post(TOKEN_LOGIN_URL, payload)
-
-        self.assertIn('user_id', res.data)
-        self.assertIn('email', res.data)
 
     def test_get_change_password_url_not_allowed(self):
         """Test for get change password URL with loggedin users."""
@@ -183,6 +248,17 @@ class PrivateUserApiTest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertTrue(self.user.check_password(payload['new_password']))
 
+    def test_token_generator_for_showing_id_and_email_in_response(self):
+        """Test for exhibiting user id and user email in response."""
+        payload = {
+            "email": "Test@example.com",
+            "password": "T123@example",
+        }
+        res = self.client.post(TOKEN_LOGIN_URL, payload)
+
+        self.assertIn('user_id', res.data)
+        self.assertIn('email', res.data)
+
     def test_destroy_auth_token_with_response_204(self):
         """Test for destroying auth token successfully."""
         payload = {
@@ -207,3 +283,31 @@ class PrivateUserApiTest(TestCase):
         self.assertIn('refresh', res.data)
         self.assertIn('email', res.data)
         self.assertIn('id', res.data)
+
+    def test_retrieve_profile_endpoint_authenticated(self):
+        """Test retrieving profile endpoint with authenticated user."""
+        res = self.client.get(PROFILE_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_post_method_for_profile_not_allowed(self):
+        """Test POST method for profile endpoint
+        is not allowed and returns 405."""
+        res = self.client.post(PROFILE_URL, {})
+
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_updating_profile_successfully(self):
+        """Test for updating profile's successfully."""
+        sample_profile = Profile.objects.get(
+            user=self.user
+        )
+        payload = {
+            'first_name': 'Ali-updated'
+        }
+
+        res = self.client.patch(PROFILE_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        sample_profile.refresh_from_db()
+        self.assertEqual(sample_profile.first_name, payload['first_name'])

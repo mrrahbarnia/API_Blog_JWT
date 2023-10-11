@@ -1,15 +1,28 @@
+"""
+Models.
+"""
+import uuid
+import os
+
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
     PermissionsMixin,
     BaseUserManager
 )
-from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 
 from app.models import TimeStampedModel
+
+
+def profile_images_file_path(instance, file_name):
+    """Generate file path for profile images."""
+    ext = os.path.splitext(file_name)[1]
+    filename = f'{uuid.uuid4()}{ext}'
+
+    return os.path.join('uploads', 'profile', filename)
 
 
 class UserManager(BaseUserManager):
@@ -67,18 +80,17 @@ SEX = [
 
 class Profile(TimeStampedModel):
     """This class defines profile attributes."""
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    image = models.ImageField(blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=50)
-    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
     bio = models.TextField()
     sex = models.CharField(choices=SEX, max_length=4)
 
     def __str__(self):
-        self.user.email
+        return self.user.email
 
 
-@receiver(post_save, sender=get_user_model())
+@receiver(post_save, sender=User)
 def save_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
