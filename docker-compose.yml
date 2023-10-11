@@ -21,6 +21,7 @@ services:
     container_name: backend
     ports:
       - "8000:8000"
+    restart: always
     volumes:
       - ./app:/app
       - dev-static-data:/vol/web/static
@@ -37,6 +38,7 @@ services:
     depends_on:
       - db
       - redis
+      - rabbitmq
 
   celery:
     build: 
@@ -47,6 +49,7 @@ services:
     command: celery -A app worker -l INFO -Q tasks
     volumes:
       - ./app:/app
+    restart: always
     environment:
       - DB_HOST=db
       - DB_NAME=devdb
@@ -67,6 +70,7 @@ services:
       - POSTGRES_DB=devdb
       - POSTGRES_USER=devuser
       - POSTGRES_PASSWORD=changeme
+    restart: always
 
   smtp4dev:
       image: rnwood/smtp4dev:v3
