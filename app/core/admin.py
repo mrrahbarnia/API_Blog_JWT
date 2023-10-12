@@ -7,7 +7,8 @@ from django.utils.translation import gettext_lazy as _
 
 from .models import (
     User,
-    Profile
+    Profile,
+    Post
 )
 
 
@@ -42,3 +43,4 @@ class UserAdmin(UserAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.register(Profile)
+admin.site.register(Post)

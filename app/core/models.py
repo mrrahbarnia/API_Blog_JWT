@@ -1,9 +1,8 @@
 """
 Models.
 """
-import uuid
-import os
-
+from django.contrib.auth import get_user_model
+from django.utils.text import Truncator
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -15,14 +14,6 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 
 from app.models import TimeStampedModel
-
-
-def profile_images_file_path(instance, file_name):
-    """Generate file path for profile images."""
-    ext = os.path.splitext(file_name)[1]
-    filename = f'{uuid.uuid4()}{ext}'
-
-    return os.path.join('uploads', 'profile', filename)
 
 
 class UserManager(BaseUserManager):
@@ -80,7 +71,7 @@ SEX = [
 
 class Profile(TimeStampedModel):
     """This class defines profile attributes."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     bio = models.TextField()
@@ -94,3 +85,24 @@ class Profile(TimeStampedModel):
 def save_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
+
+
+class Post(TimeStampedModel):
+    """This class defines posts attributes."""
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    # image = models.ImageField(null=True, blank=True)
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    # category = models.ManyToManyField('Category')
+    # comment = models.ManyToManyField('Comment')
+    status = models.BooleanField(default=False)
+    counted_views = models.IntegerField(default=0)
+    published_date = models.DateTimeField()
+
+    def content_snippet(self):
+        """Return a snippet of content."""
+        truncated_content = Truncator(self.content).words(5)
+        return truncated_content
+
+    def __str__(self):
+        return self.title

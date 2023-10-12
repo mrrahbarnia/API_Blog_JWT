@@ -24,7 +24,8 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('user/', include("user.urls")),
+    path('user/', include('user.urls')),
+    path('blog/', include('blog.urls')),
     path(
         'api-auth/', include('rest_framework.urls',
                              namespace='rest_framework')),

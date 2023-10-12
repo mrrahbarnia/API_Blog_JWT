@@ -1,8 +1,6 @@
 """
 Tests for models.
 """
-from unittest.mock import patch
-
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
@@ -106,11 +104,22 @@ class ModelTests(TestCase):
             models.Profile.objects.filter(user=test_user).exists()
         )
 
-    @patch('core.models.uuid.uuid4')
-    def test_uploading_profile_image_in_correct_path(self, mock_uuid):
-        """Test for checking the path of uploading profile images."""
-        uuid = 'uuid-test'
-        mock_uuid.return_value = uuid
-        file_path = models.profile_images_file_path(None, 'example.png')
+    def test_post_create_without_image_category_successfully(self):
+        """Test for creating posts in post model successfully."""
+        user = get_user_model().objects.create_user(
+            email='Test@example.com',
+            password='T123@example'
+            )
+        profile = models.Profile.objects.get(user=user)
+        sample_post = models.Post.objects.create(
+            author=profile,
+            title='Sample title',
+            content='Sample content',
+            status=True,
+            published_date="2023-10-12T16:48:32.691Z"
+        )
 
-        self.assertEqual(file_path, f'uploads/profile/{uuid}.png')
+        self.assertTrue(models.Post.objects.filter(author=profile).exists())
+        self.assertTrue(
+            models.Post.objects.filter(title=str(sample_post)).exists()
+            )
