@@ -9,7 +9,9 @@ from .models import (
     User,
     Profile,
     Post,
-    Category
+    Category,
+    Tag,
+    Comment
 )
 
 
@@ -46,3 +48,5 @@ admin.site.register(User, UserAdmin)
 admin.site.register(Profile)
 admin.site.register(Post)
 admin.site.register(Category)
+admin.site.register(Tag)
+admin.site.register(Comment)

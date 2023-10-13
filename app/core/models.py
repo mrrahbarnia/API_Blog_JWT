@@ -119,3 +119,25 @@ class Category(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+
+class Tag(TimeStampedModel):
+    """This class defines tags attributes."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+
+class Comment(TimeStampedModel):
+    """This class defines comments attributes."""
+    profile = models.ForeignKey(
+        Profile, on_delete=models.CASCADE
+    )
+    comment = models.TextField(max_length=1000)
+
+    def __str__(self):
+        return self.profile.user.email

@@ -138,3 +138,32 @@ class ModelTests(TestCase):
             models.Category.objects.filter(name=category.name).exists()
             )
         self.assertEqual(str(category), category.name)
+
+    def test_create_comment_successfully(self):
+        """Test creating comments successfully."""
+        sample_user = get_user_model().objects.create_user(
+            email='Test@example.com', password='T123@example'
+        )
+        sample_profile = models.Profile.objects.get(user=sample_user)
+        sample_comment = models.Comment.objects.create(
+            profile=sample_profile, comment='Sample comment'
+        )
+
+        self.assertTrue(models.Comment.objects.filter(
+            profile=sample_profile, comment=sample_comment.comment
+        ).exists())
+        self.assertTrue(str(sample_comment), sample_comment.profile.user.email)
+
+    def test_create_tag_successfully(self):
+        """Test creating tags successfully."""
+        sample_user = get_user_model().objects.create_user(
+            email='Test@example.com', password='T123@example'
+        )
+        sample_tag = models.Tag.objects.create(
+            user=sample_user, name='Sample tag'
+        )
+
+        self.assertTrue(models.Tag.objects.filter(
+            user=sample_user, name=sample_tag.name
+        ).exists())
+        self.assertEqual(str(sample_tag), sample_tag.name)
