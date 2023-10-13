@@ -10,7 +10,8 @@ from rest_framework.test import APIClient
 
 from core.models import (
     Profile,
-    Post
+    Post,
+    Category
 )
 
 
@@ -114,9 +115,10 @@ class PrivateUserPostTests(TestCase):
         payload = {
             'title': 'Django',
             'content': 'Django advanced course.',
+            'categories': [],
             'published_date': "2023-10-12T16:48:32.691Z"
         }
-        res = self.client.post(LIST_POST_URL, payload)
+        res = self.client.post(LIST_POST_URL, payload, format='json')
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Post.objects.filter(author=self.profile).exists())
@@ -164,12 +166,13 @@ class PrivateUserPostTests(TestCase):
         payload = {
             'title': 'edited-title',
             'content': 'edited_content',
+            'categories': [],
             'published_date': "2023-10-12T16:48:32.691Z"
         }
         post = create_post(author=self.profile)
         url = post_detail_url(post.id)
 
-        res = self.client.put(url, payload)
+        res = self.client.put(url, payload, format='json')
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         post.refresh_from_db()
@@ -217,3 +220,113 @@ class PrivateUserPostTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(Post.objects.filter(author=anonymous_profile).exists())
+
+    def test_create_post_with_creating_new_categories(self):
+        """Test creating posts with new categories."""
+        payload = {
+            'title': 'Sample title',
+            'content': 'Sample content',
+            'published_date': "2023-10-12T16:48:32.691Z",
+            'categories': [
+                {'name': 'Development'}, {'name': 'Sample category'}
+                ]
+        }
+        res = self.client.post(LIST_POST_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        categories = Category.objects.all()
+        self.assertEqual(categories.count(), 2)
+        for category in payload['categories']:
+            exists = Category.objects.filter(
+                user=self.user,
+                name=category['name']
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_post_with_existing_categories(self):
+        """Test creating post with existing
+        category without creating it again."""
+        category = Category.objects.create(user=self.user, name='Development')
+        payload = {
+            'title': 'Sample title',
+            'content': 'Sample content',
+            'published_date': "2023-10-12T16:48:32.691Z",
+            'categories': [
+                {'name': 'Development'}, {'name': 'Sample category'}
+                ]
+        }
+        res = self.client.post(LIST_POST_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        posts = Post.objects.filter(author=self.profile)
+        self.assertEqual(posts.count(), 1)
+        post = posts[0]
+        self.assertEqual(post.categories.count(), 2)
+        self.assertIn(category, post.categories.all())
+        for category in payload['categories']:
+            exists = Category.objects.filter(
+                user=self.user,
+                name=category['name']
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_categories_while_updating_posts(self):
+        """Test creating categories while updating posts."""
+        payload = {
+            'categories': [{'name': 'Sample category'}]
+        }
+        post = create_post(author=self.profile)
+        url = post_detail_url(post.id)
+
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        post_categories = post.categories.all()
+        self.assertEqual(post_categories.count(), 1)
+        new_category = Category.objects.get(
+            user=self.user,
+            name=(payload['categories'][0])['name']
+        )
+        self.assertIn(new_category, Category.objects.all())
+
+    def test_update_post_assign_categories(self):
+        """Test assigning an existing category when updating a post."""
+        sample_category = Category.objects.create(
+            user=self.user, name='Sample'
+        )
+        sample2_category = Category.objects.create(
+            user=self.user, name='Sample2'
+        )
+        sample_post = create_post(author=self.profile)
+        sample_post.categories.add(sample_category)
+        payload = {
+            'categories': [{'name': 'Sample2'}]
+        }
+
+        url = post_detail_url(sample_post.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        sample_post.refresh_from_db()
+        self.assertIn(sample2_category, sample_post.categories.all())
+        self.assertNotIn(sample_category, sample_post.categories.all())
+
+    def test_clear_categories_while_updating_posts(self):
+        """Test clearing all categories of a post while updating it."""
+        sample_post = create_post(author=self.profile)
+        url = post_detail_url(sample_post.id)
+        sample_category = Category.objects.create(
+            user=self.user, name='Sample'
+        )
+        sample_post.categories.add(sample_category)
+        payload = {'categories': []}
+
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        post_categories = sample_post.categories.all()
+        self.assertEqual(post_categories.count(), 0)
+        self.assertTrue(Category.objects.filter(
+            user=self.user, name='Sample'
+        ).exists())
