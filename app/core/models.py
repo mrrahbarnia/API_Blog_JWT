@@ -96,6 +96,7 @@ class Post(TimeStampedModel):
     title = models.CharField(max_length=255)
     content = models.TextField()
     categories = models.ManyToManyField('Category')
+    tags = models.ManyToManyField('Tag')
     # comment = models.ManyToManyField('Comment')
     status = models.BooleanField(default=False)
     counted_views = models.IntegerField(default=0)

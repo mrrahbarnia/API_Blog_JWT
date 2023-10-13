@@ -11,7 +11,8 @@ from rest_framework.test import APIClient
 from core.models import (
     Profile,
     Post,
-    Category
+    Category,
+    Tag
 )
 
 
@@ -116,6 +117,7 @@ class PrivateUserPostTests(TestCase):
             'title': 'Django',
             'content': 'Django advanced course.',
             'categories': [],
+            'tags': [],
             'published_date': "2023-10-12T16:48:32.691Z"
         }
         res = self.client.post(LIST_POST_URL, payload, format='json')
@@ -167,6 +169,7 @@ class PrivateUserPostTests(TestCase):
             'title': 'edited-title',
             'content': 'edited_content',
             'categories': [],
+            'tags': [],
             'published_date': "2023-10-12T16:48:32.691Z"
         }
         post = create_post(author=self.profile)
@@ -229,7 +232,8 @@ class PrivateUserPostTests(TestCase):
             'published_date': "2023-10-12T16:48:32.691Z",
             'categories': [
                 {'name': 'Development'}, {'name': 'Sample category'}
-                ]
+                ],
+            'tags': []
         }
         res = self.client.post(LIST_POST_URL, payload, format='json')
 
@@ -253,7 +257,8 @@ class PrivateUserPostTests(TestCase):
             'published_date': "2023-10-12T16:48:32.691Z",
             'categories': [
                 {'name': 'Development'}, {'name': 'Sample category'}
-                ]
+                ],
+            'tags': []
         }
         res = self.client.post(LIST_POST_URL, payload, format='json')
 
@@ -328,5 +333,117 @@ class PrivateUserPostTests(TestCase):
         post_categories = sample_post.categories.all()
         self.assertEqual(post_categories.count(), 0)
         self.assertTrue(Category.objects.filter(
+            user=self.user, name='Sample'
+        ).exists())
+
+    def test_create_post_with_creating_new_tags(self):
+        """Test creating posts with new tags."""
+        payload = {
+            'title': 'Sample title',
+            'content': 'Sample content',
+            'published_date': "2023-10-12T16:48:32.691Z",
+            'categories': [],
+            'tags': [
+                {'name': 'Development'}, {'name': 'Sample tag'}
+                ]
+        }
+        res = self.client.post(LIST_POST_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        tags = Tag.objects.all()
+        self.assertEqual(tags.count(), 2)
+        for tag in payload['tags']:
+            exists = Tag.objects.filter(
+                user=self.user,
+                name=tag['name']
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_post_with_existing_tags(self):
+        """Test creating post with existing
+        tag without creating it again."""
+        tag = Tag.objects.create(user=self.user, name='Development')
+        payload = {
+            'title': 'Sample title',
+            'content': 'Sample content',
+            'published_date': "2023-10-12T16:48:32.691Z",
+            'categories': [],
+            'tags': [
+                {'name': 'Development'}, {'name': 'Sample category'}
+                ]
+        }
+        res = self.client.post(LIST_POST_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        posts = Post.objects.filter(author=self.profile)
+        self.assertEqual(posts.count(), 1)
+        post = posts[0]
+        self.assertEqual(post.tags.count(), 2)
+        self.assertIn(tag, post.tags.all())
+        for tag in payload['tags']:
+            exists = Tag.objects.filter(
+                user=self.user,
+                name=tag['name']
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_tags_while_updating_posts(self):
+        """Test creating tags while updating posts."""
+        payload = {
+            'tags': [{'name': 'Sample tag'}]
+        }
+        post = create_post(author=self.profile)
+        url = post_detail_url(post.id)
+
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        post_tags = post.tags.all()
+        self.assertEqual(post_tags.count(), 1)
+        new_tag = Tag.objects.get(
+            user=self.user,
+            name=(payload['tags'][0])['name']
+        )
+        self.assertIn(new_tag, Tag.objects.all())
+
+    def test_update_post_assign_tags(self):
+        """Test assigning an existing tag when updating a post."""
+        sample_tag = Tag.objects.create(
+            user=self.user, name='Sample'
+        )
+        sample2_tag = Tag.objects.create(
+            user=self.user, name='Sample2'
+        )
+        sample_post = create_post(author=self.profile)
+        sample_post.tags.add(sample_tag)
+        payload = {
+            'tags': [{'name': 'Sample2'}]
+        }
+
+        url = post_detail_url(sample_post.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        sample_post.refresh_from_db()
+        self.assertIn(sample2_tag, sample_post.tags.all())
+        self.assertNotIn(sample_tag, sample_post.tags.all())
+
+    def test_clear_tags_while_updating_posts(self):
+        """Test clearing all tags of a post while updating it."""
+        sample_post = create_post(author=self.profile)
+        url = post_detail_url(sample_post.id)
+        sample_tag = Tag.objects.create(
+            user=self.user, name='Sample'
+        )
+        sample_post.tags.add(sample_tag)
+        payload = {'tags': []}
+
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        post_tags = sample_post.tags.all()
+        self.assertEqual(post_tags.count(), 0)
+        self.assertTrue(Tag.objects.filter(
             user=self.user, name='Sample'
         ).exists())

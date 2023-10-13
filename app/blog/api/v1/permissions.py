@@ -4,7 +4,7 @@ Permissions for Blog endpoints.
 from rest_framework import permissions
 
 
-class IsOwnerOrReadOnlyForPost(permissions.BasePermission):
+class IsOwnerOrReadOnlyProfile(permissions.BasePermission):
     """Permission for deleting and updating a post
     only with the author of that post otherwise readonly."""
 
@@ -16,7 +16,7 @@ class IsOwnerOrReadOnlyForPost(permissions.BasePermission):
         return obj.author.user.id == request.user.id
 
 
-class IsOwnerOrReadOnlyForCategory(permissions.BasePermission):
+class IsOwnerOrReadOnlyUser(permissions.BasePermission):
     """Permission for deleting and updating a category
     only with the user of that category otherwise readonly."""
 

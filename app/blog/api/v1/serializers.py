@@ -5,7 +5,8 @@ from rest_framework import serializers
 
 from core.models import (
     Post,
-    Category
+    Category,
+    Tag
 )
 
 
@@ -18,22 +19,44 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class TagSerializer(serializers.ModelSerializer):
+    """Serializer for tags."""
+
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']
+        read_only_fields = ['id']
+
+
 class PostSerializer(serializers.ModelSerializer):
     """Serializer for posts."""
     snippet = serializers.CharField(source='content_snippet', read_only=True)
     abs_url = serializers.SerializerMethodField(read_only=True)
     categories = CategorySerializer(many=True, required=True)
+    tags = TagSerializer(many=True, required=True)
 
     class Meta:
         model = Post
         fields = [
-            'id', 'author', 'title', 'snippet',
-            'categories', 'content', 'abs_url'
+            'id', 'author', 'title', 'snippet', 'categories',
+            'content', 'abs_url', 'tags'
             ]
         read_only_fields = ['id', 'author', 'status']
         extra_kwargs = {
             'content': {'write_only': True}
         }
+
+    def _get_or_create_tags(self, tags, post):
+        """Handle getting or creating tags and
+        assign them to post while creating them."""
+        auth_user = self.context['request'].user
+        for tag in tags:
+            tag_obj, created = Tag.objects.get_or_create(
+                user=auth_user,
+                # Best practice for future updates of tag model.
+                **tag
+            )
+            post.tags.add(tag_obj)
 
     def _get_or_create_categories(self, categories, post):
         """Handle getting or creating categories and
@@ -42,7 +65,7 @@ class PostSerializer(serializers.ModelSerializer):
         for category in categories:
             category_obj, created = Category.objects.get_or_create(
                 user=auth_user,
-                # Best practice for future updates of Category model.
+                # Best practice for future updates of category model.
                 **category
             )
             post.categories.add(category_obj)
@@ -50,17 +73,24 @@ class PostSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create and return a post with validated data."""
         categories = validated_data.pop('categories', [])
+        tags = validated_data.pop('tags', [])
         post = Post.objects.create(**validated_data)
         self._get_or_create_categories(categories, post)
+        self._get_or_create_tags(tags, post)
 
         return post
 
     def update(self, instance, validated_data):
         """Update and return a post with validated data."""
         categories = validated_data.pop('categories', None)
+        tags = validated_data.pop('tags', None)
         if categories is not None:
             instance.categories.clear()
             self._get_or_create_categories(categories, instance)
+
+        if tags is not None:
+            instance.tags.clear()
+            self._get_or_create_tags(tags, instance)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

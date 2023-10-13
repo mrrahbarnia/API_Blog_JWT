@@ -9,16 +9,18 @@ from rest_framework import permissions
 from core.models import (
     Post,
     Profile,
-    Category
+    Category,
+    Tag
 )
 from .permissions import (
-    IsOwnerOrReadOnlyForPost,
-    IsOwnerOrReadOnlyForCategory
+    IsOwnerOrReadOnlyProfile,
+    IsOwnerOrReadOnlyUser
 )
 from .serializers import (
     PostSerializer,
     PostDetailSerializer,
-    CategorySerializer
+    CategorySerializer,
+    TagSerializer
 )
 
 
@@ -26,7 +28,7 @@ class PostModelViewSet(viewsets.ModelViewSet):
     """CRUD for post's endpoints."""
     serializer_class = PostDetailSerializer
     permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyForPost
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyProfile
         ]
     queryset = Post.objects.filter(status=True).order_by('-id')
 
@@ -46,9 +48,24 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all().order_by('-name')
     permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyForCategory
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyUser
         ]
 
     def perform_create(self, serializer):
+        """Select user from request."""
+        user = get_user_model().objects.get(id=self.request.user.id)
+        serializer.save(user=user)
+
+
+class TagModelViewSet(viewsets.ModelViewSet):
+    """CRUD for tags endpoints."""
+    serializer_class = TagSerializer
+    queryset = Tag.objects.all().order_by('-name')
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyUser
+    ]
+
+    def perform_create(self, serializer):
+        """Select user from request."""
         user = get_user_model().objects.get(id=self.request.user.id)
         serializer.save(user=user)
