@@ -3,7 +3,19 @@ Serializers for blog endpoints.
 """
 from rest_framework import serializers
 
-from core.models import Post
+from core.models import (
+    Post,
+    Category
+)
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Serializer for categories."""
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
+        read_only_fields = ['id']
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -42,3 +54,4 @@ class PostDetailSerializer(PostSerializer):
         fields.remove('snippet')
         fields.remove('abs_url')
         extra_kwargs = {'content': {'write_only': False}}
+

@@ -1,7 +1,7 @@
 """
 Models.
 """
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.utils.text import Truncator
 from django.db import models
 from django.contrib.auth.models import (
@@ -71,7 +71,9 @@ SEX = [
 
 class Profile(TimeStampedModel):
     """This class defines profile attributes."""
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     bio = models.TextField()
@@ -93,7 +95,7 @@ class Post(TimeStampedModel):
     # image = models.ImageField(null=True, blank=True)
     title = models.CharField(max_length=255)
     content = models.TextField()
-    # category = models.ManyToManyField('Category')
+    categories = models.ManyToManyField('Category')
     # comment = models.ManyToManyField('Comment')
     status = models.BooleanField(default=False)
     counted_views = models.IntegerField(default=0)
@@ -106,3 +108,14 @@ class Post(TimeStampedModel):
 
     def __str__(self):
         return self.title
+    
+
+class Category(TimeStampedModel):
+    """This class defines categories attributes."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name

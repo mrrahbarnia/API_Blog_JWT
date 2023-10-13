@@ -123,3 +123,16 @@ class ModelTests(TestCase):
         self.assertTrue(
             models.Post.objects.filter(title=str(sample_post)).exists()
             )
+
+    def test_create_category_successfully(self):
+        """Test creating categories successfully."""
+        sample_user = get_user_model().objects.create_user(
+            email='Test@example.com',
+            password='T123@example'
+        )
+        category = models.Category.objects.create(user=sample_user, name='Technology')
+
+        self.assertTrue(
+            models.Category.objects.filter(name=category.name).exists()
+            )
+        self.assertEqual(str(category), category.name)

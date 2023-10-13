@@ -43,7 +43,7 @@ def create_post(author, **params):
 
 
 class PublicUserPostTests(TestCase):
-    """Test authenticated requests."""
+    """Test unauthenticated requests."""
     def setUp(self):
         self.client = APIClient()
 
@@ -99,7 +99,7 @@ class PublicUserPostTests(TestCase):
 
 
 class PrivateUserPostTests(TestCase):
-    """Test unauthenticated requests."""
+    """Test authenticated requests."""
     def setUp(self):
         self.client = APIClient()
         self.user = create_user(
