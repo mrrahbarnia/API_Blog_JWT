@@ -130,7 +130,9 @@ class ModelTests(TestCase):
             email='Test@example.com',
             password='T123@example'
         )
-        category = models.Category.objects.create(user=sample_user, name='Technology')
+        category = models.Category.objects.create(
+            user=sample_user, name='Technology'
+            )
 
         self.assertTrue(
             models.Category.objects.filter(name=category.name).exists()

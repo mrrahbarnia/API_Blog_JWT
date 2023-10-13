@@ -108,7 +108,7 @@ class Post(TimeStampedModel):
 
     def __str__(self):
         return self.title
-    
+
 
 class Category(TimeStampedModel):
     """This class defines categories attributes."""

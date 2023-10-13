@@ -54,4 +54,3 @@ class PostDetailSerializer(PostSerializer):
         fields.remove('snippet')
         fields.remove('abs_url')
         extra_kwargs = {'content': {'write_only': False}}
-

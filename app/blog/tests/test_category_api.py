@@ -20,6 +20,7 @@ def category_detail_url(category_id):
     url = reverse('blog:api-blog:category-detail', args=[category_id])
     return url
 
+
 def create_user(email='Test@example.com', password='T123@example'):
     """Create and return a sample user."""
     user = get_user_model().objects.create_user(
@@ -67,7 +68,8 @@ class PublicUserCategoryTests(TestCase):
         self.assertEqual(res.data, serializer.data)
 
     def test_create_category_unauthenticated_unsuccessfully(self):
-        """Test creating categories with unauthenticated request unsuccessfully."""
+        """Test creating categories with
+        unauthenticated request unsuccessfully."""
         payload = {
             'name': 'Python'
         }
@@ -111,7 +113,7 @@ class PrivateUserCategoryTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Category.objects.filter(name='Python').exists())
-    
+
     def test_update_category_successfully(self):
         """Test updating categories successfully."""
         payload = {

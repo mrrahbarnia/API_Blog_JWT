@@ -21,8 +21,8 @@ class IsOwnerOrReadOnlyForCategory(permissions.BasePermission):
     only with the user of that category otherwise readonly."""
 
     def has_object_permission(self, request, view, obj):
-        
+
         if request.method in permissions.SAFE_METHODS:
             return True
-        
+
         return obj.user.id == request.user.id

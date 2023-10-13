@@ -48,7 +48,7 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
     permission_classes = [
         permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyForCategory
         ]
-    
+
     def perform_create(self, serializer):
         user = get_user_model().objects.get(id=self.request.user.id)
         serializer.save(user=user)
