@@ -1,6 +1,10 @@
 """
 Test post API's.
 """
+import os
+import tempfile
+from PIL import Image
+
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
@@ -42,6 +46,11 @@ def create_post(author, **params):
     defaults.update(**params)
     post = Post.objects.create(author=author, **defaults)
     return post
+
+
+def image_upload_url(post_id):
+    """Create and return image url by post's id."""
+    return reverse('blog:api-blog:post-upload-image', args=[post_id])
 
 
 class PublicUserPostTests(TestCase):
@@ -447,3 +456,44 @@ class PrivateUserPostTests(TestCase):
         self.assertTrue(Tag.objects.filter(
             user=self.user, name='Sample'
         ).exists())
+
+
+class PostImageUploadTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user(
+            email='example@gmail.com', password='T123@example'
+            )
+        self.client.force_authenticate(self.user)
+        self.profile = Profile.objects.get(user=self.user)
+        self.post = create_post(author=self.profile)
+
+    def tearDown(self):
+        self.post.image.delete()
+
+    def test_uploading_an_image_to_post_successfully(self):
+        """Test uploading an image to a sample
+        post successfully with response 200."""
+        url = image_upload_url(self.post.id)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            image = Image.new('RGB', (10, 10))
+            image.save(image_file, format='JPEG')
+            image_file.seek(0)
+            payload = {'image': image_file}
+            res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.post.refresh_from_db()
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.post.image.path))
+
+    def test_uploading_image_with_invalid_data(self):
+        """Test uploading posts images with invalid
+        data unsuccessfully with response 400."""
+        url = image_upload_url(self.post.id)
+        payload = {'image': 'invalid_data'}
+
+        res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

@@ -1,6 +1,9 @@
 """
 Models.
 """
+import os
+import uuid
+
 from django.conf import settings
 from django.utils.text import Truncator
 from django.db import models
@@ -14,6 +17,14 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 
 from app.models import TimeStampedModel
+
+
+def post_image_file_path(instance, filename):
+    """Create and return a path for saving images."""
+    ext = os.path.splitext(filename)[1]
+    file_name = f'{uuid.uuid4()}{ext}'
+
+    return os.path.join('uploads', 'post', file_name)
 
 
 class UserManager(BaseUserManager):
@@ -92,7 +103,7 @@ def save_profile(sender, instance, created, **kwargs):
 class Post(TimeStampedModel):
     """This class defines posts attributes."""
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    # image = models.ImageField(null=True, blank=True)
+    image = models.ImageField(null=True, upload_to=post_image_file_path)
     title = models.CharField(max_length=255)
     content = models.TextField()
     categories = models.ManyToManyField('Category')

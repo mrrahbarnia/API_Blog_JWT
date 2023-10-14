@@ -133,3 +133,13 @@ class CommentDetailSerializer(CommentSerializer):
     class Meta(CommentSerializer.Meta):
         fields = CommentSerializer.Meta.fields + ['comment']
         fields.remove('snippet')
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    """Serializer for the image belong to each posts."""
+
+    class Meta:
+        model = Post
+        fields = ['id', 'image']
+        read_only_fields = ['id']
+        extra_kwargs = {'image': {'required': True}}
