@@ -6,7 +6,8 @@ from rest_framework import serializers
 from core.models import (
     Post,
     Category,
-    Tag
+    Tag,
+    Comment
 )
 
 
@@ -114,3 +115,21 @@ class PostDetailSerializer(PostSerializer):
         fields.remove('snippet')
         fields.remove('abs_url')
         extra_kwargs = {'content': {'write_only': False}}
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Serializer for comments."""
+    snippet = serializers.CharField(source='comment_snippet', read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'user', 'post_obj', 'snippet']
+        read_only_fields = ['id', 'user']
+
+
+class CommentDetailSerializer(CommentSerializer):
+    """Serializer for detail comment."""
+
+    class Meta(CommentSerializer.Meta):
+        fields = CommentSerializer.Meta.fields + ['comment']
+        fields.remove('snippet')

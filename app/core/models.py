@@ -97,7 +97,7 @@ class Post(TimeStampedModel):
     content = models.TextField()
     categories = models.ManyToManyField('Category')
     tags = models.ManyToManyField('Tag')
-    # comment = models.ManyToManyField('Comment')
+    comments = models.ManyToManyField('Comment')
     status = models.BooleanField(default=False)
     counted_views = models.IntegerField(default=0)
     published_date = models.DateTimeField()
@@ -135,10 +135,16 @@ class Tag(TimeStampedModel):
 
 class Comment(TimeStampedModel):
     """This class defines comments attributes."""
-    profile = models.ForeignKey(
-        Profile, on_delete=models.CASCADE
+    post_obj = models.ForeignKey(Post, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
     )
     comment = models.TextField(max_length=1000)
 
     def __str__(self):
-        return self.profile.user.email
+        return f'from: {self.user} - on: {self.post_obj}'
+
+    def comment_snippet(self):
+        """Return a snippet of the comment."""
+        trancated_comment = Truncator(self.comment).words(5)
+        return trancated_comment

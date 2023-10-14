@@ -10,17 +10,20 @@ from core.models import (
     Post,
     Profile,
     Category,
-    Tag
+    Tag,
+    Comment
 )
 from .permissions import (
     IsOwnerOrReadOnlyProfile,
-    IsOwnerOrReadOnlyUser
+    IsOwnerOrReadOnlyUser,
 )
 from .serializers import (
     PostSerializer,
     PostDetailSerializer,
     CategorySerializer,
-    TagSerializer
+    TagSerializer,
+    CommentSerializer,
+    CommentDetailSerializer
 )
 
 
@@ -69,3 +72,21 @@ class TagModelViewSet(viewsets.ModelViewSet):
         """Select user from request."""
         user = get_user_model().objects.get(id=self.request.user.id)
         serializer.save(user=user)
+
+
+class CommentModelViewSet(viewsets.ModelViewSet):
+    """CRUD for comments endpoints."""
+    serializer_class = CommentDetailSerializer
+    queryset = Comment.objects.all().order_by('-comment')
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyUser
+    ]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        serializer.save(user=user)
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return CommentSerializer
+        return CommentDetailSerializer

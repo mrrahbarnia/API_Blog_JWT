@@ -16,6 +16,7 @@ router = routers.DefaultRouter()
 router.register('posts', views.PostModelViewSet)
 router.register('categories', views.CategoryModelViewSet)
 router.register('tags', views.TagModelViewSet)
+router.register('comments', views.CommentModelViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

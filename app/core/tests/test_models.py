@@ -145,14 +145,18 @@ class ModelTests(TestCase):
             email='Test@example.com', password='T123@example'
         )
         sample_profile = models.Profile.objects.get(user=sample_user)
+        sample_post = models.Post.objects.create(
+            author=sample_profile, title='Sample post',
+            content='Sample content', status=True,
+            published_date="2023-10-12T16:48:32.691Z"
+        )
         sample_comment = models.Comment.objects.create(
-            profile=sample_profile, comment='Sample comment'
+            post_obj=sample_post, user=sample_user, comment='Sample comment'
         )
 
         self.assertTrue(models.Comment.objects.filter(
-            profile=sample_profile, comment=sample_comment.comment
+            post_obj=sample_post, comment=sample_comment.comment
         ).exists())
-        self.assertTrue(str(sample_comment), sample_comment.profile.user.email)
 
     def test_create_tag_successfully(self):
         """Test creating tags successfully."""
