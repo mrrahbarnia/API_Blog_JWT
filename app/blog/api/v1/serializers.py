@@ -2,7 +2,7 @@
 Serializers for blog endpoints.
 """
 from rest_framework import serializers
-
+from django.urls import reverse
 from core.models import (
     Post,
     Category,
@@ -102,7 +102,9 @@ class PostSerializer(serializers.ModelSerializer):
     def get_abs_url(self, obj):
         """Return absolute URL of each posts."""
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.id)
+        return request.build_absolute_uri(
+            reverse('blog:api-blog:post-detail', args=[obj.id])
+            )
 
 
 class PostDetailSerializer(PostSerializer):
@@ -110,7 +112,8 @@ class PostDetailSerializer(PostSerializer):
 
     class Meta(PostSerializer.Meta):
         fields = PostSerializer.Meta.fields + [
-            'content', 'created_at', 'updated_at', 'status', 'published_date'
+            'content', 'image', 'created_at',
+            'updated_at', 'status', 'published_date'
             ]
         fields.remove('snippet')
         fields.remove('abs_url')

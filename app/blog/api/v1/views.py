@@ -1,8 +1,19 @@
 """
 Views for Blog Endpoint's API's.
 """
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiParameter,
+    OpenApiTypes
+)
+
 from django.contrib.auth import get_user_model
 
+from rest_framework.filters import (
+    SearchFilter,
+    OrderingFilter
+)
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import (
@@ -11,6 +22,8 @@ from rest_framework import (
     status
 )
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from core.models import (
     Post,
     Profile,
@@ -18,6 +31,7 @@ from core.models import (
     Tag,
     Comment
 )
+from .paginations import Defaultpagination
 from .permissions import (
     IsOwnerOrReadOnlyProfile,
     IsOwnerOrReadOnlyUser,
@@ -33,6 +47,24 @@ from .serializers import (
 )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                'tags',
+                OpenApiTypes.STR,
+                description='Comma seprated list of tag \
+                IDs to filter posts by them.'
+            ),
+            OpenApiParameter(
+                'categories',
+                OpenApiTypes.STR,
+                description='Comma seprated list of category \
+                IDs to filter posts by them.'
+            )
+        ]
+    )
+)
 class PostModelViewSet(viewsets.ModelViewSet):
     """CRUD for post's endpoints."""
     serializer_class = PostDetailSerializer
@@ -40,6 +72,27 @@ class PostModelViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnlyProfile
         ]
     queryset = Post.objects.filter(status=True).order_by('-id')
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['categories', 'tags']
+    search_fields = ['title', 'content']
+    ordering_fields = ['published_date']
+    pagination_class = Defaultpagination
+
+    def _get_params_to_int(self, qs):
+        """Convert comma seprated string to splited integers."""
+        return [int(str_id) for str_id in qs.split(',')]
+
+    def get_queryset(self):
+        tags = self.request.query_params.get('tags')
+        categories = self.request.query_params.get('categories')
+        queryset = self.queryset
+        if tags:
+            tags_id = self._get_params_to_int(tags)
+            queryset = queryset.filter(tags__id__in=tags_id)
+        if categories:
+            categories_id = self._get_params_to_int(categories)
+            queryset = queryset.filter(categories__id__in=categories_id)
+        return queryset.distinct()
 
     def perform_create(self, serializer):
         profile = Profile.objects.get(user=self.request.user)

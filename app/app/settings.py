@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'core',
     'user',
     'blog',
+    'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
