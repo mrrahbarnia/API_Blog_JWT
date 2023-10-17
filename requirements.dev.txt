@@ -1,3 +1,3 @@
 flake8>=3.9.2,<3.10
 Markdown==3.5
-freezegun
+Faker==19.6.2

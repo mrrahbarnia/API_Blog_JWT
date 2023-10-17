@@ -1,18 +1,18 @@
 """
 Tests for custom django commands.
 """
+from unittest.mock import patch
+
 from django.test import SimpleTestCase
 from django.core.management import call_command
 from django.db.utils import OperationalError
 
 from psycopg2 import OperationalError as Psycopg2Error
 
-from unittest.mock import patch
-
 
 @patch('core.management.commands.wait_for_db.Command.check')
-class CommandTests(SimpleTestCase):
-    """Test Commands."""
+class WaitForDbCommandTests(SimpleTestCase):
+    """Test Commands for wait for db command."""
 
     def test_wait_for_db_when_db_ready(self, patched_check):
         """Test waiting for db if db is ready."""

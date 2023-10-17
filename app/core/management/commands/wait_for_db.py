@@ -2,6 +2,7 @@
 Command for waiting for db untill it will be ready.
 """
 import time
+
 from django.core.management.base import BaseCommand
 from django.db.utils import OperationalError
 

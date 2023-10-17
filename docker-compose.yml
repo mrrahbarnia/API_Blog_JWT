@@ -84,6 +84,21 @@ services:
       environment:
         - ServerOptions__HostName=smtp4dev
 
+  master:
+    image: locustio/locust
+    ports:
+     - "8089:8089"
+    volumes:
+      - ./app/locust:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --master -H http://app:8000/
+  
+  worker:
+    image: locustio/locust
+    volumes:
+      - ./app/locust:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --worker --master-host master
+
+
 volumes:
   dev-db-data:
   dev-static-data:
