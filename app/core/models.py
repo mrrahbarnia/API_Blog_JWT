@@ -110,7 +110,6 @@ class Post(TimeStampedModel):
     tags = models.ManyToManyField('Tag')
     comments = models.ManyToManyField('Comment')
     status = models.BooleanField(default=False)
-    counted_views = models.IntegerField(default=0)
     published_date = models.DateTimeField()
 
     def content_snippet(self):

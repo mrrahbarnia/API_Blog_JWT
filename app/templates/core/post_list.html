@@ -1,0 +1,12 @@
+{% for post in posts %}
+<div>
+    <a href="{% url 'blog:post-detail' pk=post.id %}">
+        <h2>
+            {{post.title}}
+        </h2>
+    </a>
+    <a href="{% url 'blog:post-edit' pk=post.id %}"><p>edit</p></a>
+    <a href="{% url 'blog:post-delete' pk=post.id %}"><p>delete</p></a>
+    <hr>
+</div>
+{% endfor %}
