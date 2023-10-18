@@ -8,6 +8,7 @@ from drf_spectacular.utils import (
     OpenApiTypes
 )
 
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
 
 from rest_framework.filters import (
@@ -77,6 +78,19 @@ class PostModelViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'content']
     ordering_fields = ['published_date']
     pagination_class = Defaultpagination
+
+    def list(self, request, *args, **kwargs):
+        """
+        i haven't implemented timeout option because i
+        explained that to invalidate cache when saving,
+        deleting or updating post objects in core/models.py
+        """
+        cached_data = cache.get('post_objects')
+        if cached_data:
+            return Response(cached_data)
+        response = super().list(request, *args, **kwargs)
+        cache.set('post_objects', response.data)
+        return response
 
     def _get_params_to_int(self, qs):
         """Convert comma seprated string to splited integers."""

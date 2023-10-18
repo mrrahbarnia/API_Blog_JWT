@@ -4,6 +4,12 @@ Models.
 import os
 import uuid
 
+from django.utils import timezone
+from django.core.cache import cache
+from django.db.models import (
+    QuerySet,
+    Manager
+)
 from django.conf import settings
 from django.utils.text import Truncator
 from django.db import models
@@ -16,6 +22,13 @@ from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 
+from django_lifecycle import (
+    LifecycleModel,
+    hook,
+    AFTER_DELETE,
+    AFTER_SAVE
+)
+
 from app.models import TimeStampedModel
 
 
@@ -25,6 +38,20 @@ def post_image_file_path(instance, filename):
     file_name = f'{uuid.uuid4()}{ext}'
 
     return os.path.join('uploads', 'post', file_name)
+
+
+class PostQuerySet(QuerySet):
+    def update(self, **kwargs):
+        """Overrode update method on post objects to
+        invalidated cache on deleting or saving posts."""
+        cache.delete('post_objects')
+        super(PostQuerySet, self).update(updated_at=timezone.now(), **kwargs)
+
+
+class PostManager(Manager):
+    """Create and return a custom queryset for posts."""
+    def get_queryset(self):
+        return PostQuerySet(self.model, using=self._db)
 
 
 class UserManager(BaseUserManager):
@@ -100,7 +127,7 @@ def save_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
 
 
-class Post(TimeStampedModel):
+class Post(TimeStampedModel, LifecycleModel):
     """This class defines posts attributes."""
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
     image = models.ImageField(null=True, upload_to=post_image_file_path)
@@ -111,6 +138,13 @@ class Post(TimeStampedModel):
     comments = models.ManyToManyField('Comment')
     status = models.BooleanField(default=False)
     published_date = models.DateTimeField()
+
+    objects = PostManager()
+
+    @hook(AFTER_SAVE)
+    @hook(AFTER_DELETE)
+    def invalidate_cache(self):
+        cache.delete('post_objects')
 
     def content_snippet(self):
         """Return a snippet of content."""
