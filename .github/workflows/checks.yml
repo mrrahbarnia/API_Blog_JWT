@@ -4,7 +4,7 @@
     on: [push]
     
     jobs:
-      test-lint:
+      Test-Lint:
         name: Test and Lint
         runs-on: ubuntu-20.04
         steps:
@@ -19,3 +19,24 @@
             run: docker-compose run --rm app sh -c "python manage.py wait_for_db && python manage.py test"
           - name: Lint
             run: docker-compose run --rm app sh -c "flake8"
+      
+      Deploy:
+        if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+        name: Deploy
+        needs: Test-Lint
+        runs-on: ubuntu-20.04
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v3
+          - name: Automation CICD
+            uses: appleboy/ssh-action@master
+            with:
+              username: ${{ secrets.USERNAME }}
+              password: ${{ secrets.PASSWORD }}
+              host: ${{ secrets.HOST }}
+              port: ${{ secrets.PORT }}
+              script: |
+                cd ${{ secrets.PROJECT_PATH }}  
+                docker-compose -f docker-compose-prod.yml stop
+                git pull origin
+                docker-compose -f docker-compose-prod.yml restart
