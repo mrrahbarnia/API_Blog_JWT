@@ -36,7 +36,7 @@
               host: ${{ secrets.HOST }}
               port: ${{ secrets.PORT }}
               script: |
-                cd ${{ secrets.PROJECT_PATH }}  
+                cd ${{ secrets.PROJECT_PATH }}
                 docker-compose -f docker-compose-prod.yml stop
-                git pull origin
+                git pull
                 docker-compose -f docker-compose-prod.yml restart
